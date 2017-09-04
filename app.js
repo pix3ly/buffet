@@ -5,6 +5,8 @@ const axios = require('axios')
 
 const client = new Discord.Client()
 
+const priceCache = []
+
 client.on('message', msg => {
     if (msg.content === '.ping') {
         msg.reply('pong')
@@ -23,7 +25,15 @@ client.on('message', msg => {
                     const json = response.data
 
                     if (json.success) {
-                        msg.reply(parts[1] + ' is currently ' + Number(json.result[0].Last * btcValue).toFixed(2) + ' USD')
+                        let response = parts[1] + ' is currently ' + Number(json.result[0].Last * btcValue).toFixed(2) + ' USD'
+
+                        if (priceCache[parts[1]]) {
+                            response += ' (was previously ' + priceCache[parts[1]] + 'USD)'
+                        }
+
+                        priceCache[parts[1]] = Number(json.result[0].Last * btcValue).toFixed(2)
+
+                        msg.reply(response)
                     }
                 })
             } else {
