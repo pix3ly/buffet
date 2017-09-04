@@ -25,13 +25,24 @@ client.on('message', msg => {
                     const json = response.data
 
                     if (json.success) {
-                        let response = parts[1] + ' is currently ' + Number(json.result[0].Last * btcValue).toFixed(2) + ' USD'
+                        const currentPrice = Number(json.result[0].Last * btcValue).toFixed(2)
+                        const oldPrice = priceCache[parts[1]]
 
-                        if (priceCache[parts[1]]) {
-                            response += ' (was previously ' + priceCache[parts[1]] + 'USD)'
+                        let response = parts[1] + ' is currently ' + currentPrice + ' USD'
+
+                        if (oldPrice) {
+                            let emoji = ''
+
+                            if (currentPrice > oldPrice) {
+                                emoji += ' :rocket:'
+                            } else if (currentPrice < oldPrice) {
+                                emoji += ' :red_circle:'
+                            }
+
+                            response += ' (was previously ' + oldPrice + ' USD' + emoji + ')'
                         }
 
-                        priceCache[parts[1]] = Number(json.result[0].Last * btcValue).toFixed(2)
+                        priceCache[parts[1]] = currentPrice
 
                         msg.reply(response)
                     }
