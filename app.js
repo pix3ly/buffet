@@ -5,6 +5,7 @@ const axios = require('axios')
 
 const client = new Discord.Client()
 
+const cache = []
 const tracking = []
 
 tracking['ETH'] = {}
@@ -46,7 +47,23 @@ client.on('message', msg => {
 
         getPrice(currency, (error, usd) => {
             if (!error) {
-                msg.reply(currency + ' is currently ' + usd + ' USD');
+                let broadcast = currency + ' is currently ' + usd + ' USD'
+
+                if (cache[currency]) {
+                    if (cache[currency] !== usd) {
+                        broadcast += ' (was previously ' + cache[currency] + ' USD) '
+
+                        if (usd > cache[currency]) {
+                            broadcast += ':rocket:'
+                        } else if (usd < cache[currency]) {
+                            broadcast += ':skull:'
+                        }
+                    }
+                }
+
+                cache[currency] = usd
+
+                msg.reply(broadcast)
             } else {
                 msg.reply('there\'s no currency with that name')
             }
@@ -85,4 +102,5 @@ function track() {
 client.login(config.token)
 
 track()
+
 setInterval(track, 1000 * 60 * 5)
