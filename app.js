@@ -5,8 +5,12 @@ const axios = require('axios')
 
 const client = new Discord.Client()
 
-const trackingHistory = []
-const trackingCoins = ['ETH', 'MTL', 'GNT']
+const tracking = []
+
+tracking['ETH'] = {}
+tracking['GNT'] = {}
+tracking['MTL'] = {}
+tracking['NEO'] = {}
 
 function getPrice(currency, callback) {
     axios.get('https://bittrex.com/api/v1.1/public/getmarketsummary?market=BTC-' + currency)
@@ -50,28 +54,35 @@ client.on('message', msg => {
     }
 })
 
-setInterval(() => {
-    trackingCoins.forEach((coin) => {
-        getPrice(coin, (error, usd) => {
+function track() {
+    for (const key in tracking) {
+        const value = tracking[key]
+
+        getPrice(key, (error, usd) => {
             if (!error) {
-                if (trackingHistory[coin] > usd) {
-                    const percentage = Number(trackingHistory[coin] / usd * 100).toFixed(1) - 100
+                if (value.price) {
+                    let change = Number((usd - value.price) / value.price * 100).toFixed(1)
 
-                    if (percentage >= 5) {
-                        client.channels.get(config.alertsChannel).sendMessage(coin + ' is going up by ' + percentage + '%')
+                    let broadcast = false
+
+                    if (change >= config.alerts.margin) {
+                        broadcast = key + ' is going up by ' + change + '%'
+                    } else if (change <= -config.alerts.margin) {
+                        broadcast = key + ' is going down by ' + change + '%'
                     }
-                } else if (trackingHistory[coin] < usd) {
-                    const percentage = Number(usd / trackingHistory[coin] * 100).toFixed(1) - 100
 
-                    if (percentage >= 5) {
-                        client.channels.get(config.alertsChannel).sendMessage(coin + ' is going down by ' + percentage + '%')
+                    if (broadcast) {
+                        client.channels.get(config.alerts.channel).sendMessage(broadcast)
                     }
                 }
 
-                trackingHistory[coin] = usd
+                tracking[key].price = usd
             }
         })
-    })
-}, 1000 * 60 * 5)
+    }
+}
 
 client.login(config.token)
+
+track()
+setInterval(track, 1000 * 60 * 5)

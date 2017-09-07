@@ -1,4 +1,7 @@
 module.exports = {
     token: '',
-    alertsChannel: ''
+    alerts: {
+        channel: '',
+        margin: 2
+    }
 }
