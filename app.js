@@ -13,63 +13,29 @@ tracking['GNT'] = {}
 tracking['MTL'] = {}
 tracking['NEO'] = {}
 
-function getPrice(currency, callback) {
-    axios.get('https://bittrex.com/api/v1.1/public/getmarketsummary?market=BTC-' + currency)
-        .then((response) => {
-            const json = response.data
-
-            if (json.success) {
-                const btcPrice = json.result[0].Last
-
-                axios.get('https://bittrex.com/api/v1.1/public/getmarketsummary?market=USDT-BTC')
-                    .then((response) => {
-                        const json = response.data
-
-                        const usdPrice = Number(json.result[0].Last * btcPrice).toFixed(2)
-
-                        callback(false, usdPrice)
-                    })
-            } else {
-                callback(true, null)
-            }
-        })
-}
-
 client.on('message', msg => {
-    if (msg.content === '.ping') {
-        msg.reply('pong')
-    }
+    const startingCharacter = msg.content.substr(0, 1)
 
-    const parts = msg.content.split(' ')
+    if (startingCharacter === '.') {
+        const parts = msg.content.split(' ')
 
-    if (parts[0] === '.price') {
-        const currency = parts[1].toUpperCase()
+        const command = parts[0].substr(1)
 
-        getPrice(currency, (error, usd) => {
-            if (!error) {
-                let broadcast = currency + ' is currently ' + usd + ' USD'
+        if (config.commands[command]) {
+            parts.shift()
 
-                if (cache[currency]) {
-                    if (cache[currency] !== usd) {
-                        broadcast += ' (was previously ' + cache[currency] + ' USD) '
-
-                        if (usd > cache[currency]) {
-                            broadcast += ':rocket:'
-                        } else if (usd < cache[currency]) {
-                            broadcast += ':skull:'
-                        }
-                    }
-                }
-
-                cache[currency] = usd
-
-                msg.reply(broadcast)
-            } else {
-                msg.reply('there\'s no currency with that name')
+            const request = {
+                arguments: parts
             }
-        })
+
+            config.commands[command](config, request, response => {
+                msg.reply(response)
+            })
+        }
     }
 })
+
+const getPrice = require('./helpers/get_price')
 
 function track() {
     for (const key in tracking) {
